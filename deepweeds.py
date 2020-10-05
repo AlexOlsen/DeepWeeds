@@ -19,22 +19,23 @@ from skimage.transform import resize
 from keras.applications.inception_v3 import InceptionV3
 from keras.applications.resnet50 import ResNet50
 from keras.layers import Dense, GlobalAveragePooling2D
+import requests
 
 # Global paths
 OUTPUT_DIRECTORY = "./outputs/"
 LABEL_DIRECTORY = "./labels/"
 MODEL_DIRECTORY = "./models/"
-MODEL_URL = "https://nextcloud.qriscloud.org.au/index.php/s/Y7EhlkVMYCqxdg2/download"
+MODEL_GD_ID = "1MRbN5hXOTYnw7-71K-2vjY01uJ9GkQM5"
 MODEL_ZIP_FILE = "./models/models.zip"
 IMG_DIRECTORY = "./images/"
-IMG_URL = "https://nextcloud.qriscloud.org.au/index.php/s/a3KxPawpqkiorST/download"
+IMG_GD_ID = "1xnK3B6K6KekDI55vwJ0vnc2IGoDga9cj"
 IMG_ZIP_FILE = "./images/images.zip"
 
 # Global variables
 RAW_IMG_SIZE = (256, 256)
 IMG_SIZE = (224, 224)
 INPUT_SHAPE = (IMG_SIZE[0], IMG_SIZE[1], 3)
-MAX_EPOCH = 2
+MAX_EPOCH = 200
 BATCH_SIZE = 32
 FOLDS = 5
 STOPPING_PATIENCE = 32
@@ -52,6 +53,38 @@ CLASS_NAMES = ['Chinee Apple',
                'Negatives']
 
 
+def download_google_drive_file(id, destination):
+    URL = "https://docs.google.com/uc?export=download"
+
+    session = requests.Session()
+
+    response = session.get(URL, params = { 'id' : id }, stream = True)
+    token = get_confirm_token(response)
+
+    if token:
+        params = { 'id' : id, 'confirm' : token }
+        response = session.get(URL, params = params, stream = True)
+
+    save_response_content(response, destination)
+
+
+def get_confirm_token(response):
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            return value
+
+    return None
+
+
+def save_response_content(response, destination):
+    CHUNK_SIZE = 32768
+
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk: # filter out keep-alive new chunks
+                f.write(chunk)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Train and test ResNet50, InceptionV3, or custom model on DeepWeeds.')
     parser.add_argument("command", default='train', help="'cross_validate' or 'inference'")
@@ -64,8 +97,7 @@ def download_images():
     if not os.path.exists(IMG_DIRECTORY):
         os.makedirs(IMG_DIRECTORY)
         print("Downloading DeepWeeds images to " + IMG_ZIP_FILE)
-        with urlopen(IMG_URL) as resp, open(IMG_ZIP_FILE, 'wb') as out:
-            shutil.copyfileobj(resp, out)
+        download_google_drive_file(IMG_GD_ID, IMG_ZIP_FILE)
         print("Finished downloading images.")
         print("Unzipping " + IMG_ZIP_FILE)
         with ZipFile(IMG_ZIP_FILE, "r") as zip_ref:
@@ -77,8 +109,7 @@ def download_models():
     if not os.path.exists(MODEL_DIRECTORY):
         os.makedirs(MODEL_DIRECTORY)
         print("Downloading DeepWeeds models to " + MODEL_ZIP_FILE)
-        with urlopen(MODEL_URL) as resp, open(MODEL_ZIP_FILE, 'wb') as out:
-            shutil.copyfileobj(resp, out)
+        download_google_drive_file(MODEL_GD_ID, MODEL_ZIP_FILE)
         print("Finished downloading models.")
         print("Unzipping " + MODEL_ZIP_FILE)
         with ZipFile(MODEL_ZIP_FILE, "r") as zip_ref:

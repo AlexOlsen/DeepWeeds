@@ -1,35 +1,37 @@
 import argparse
-import os
-from zipfile import ZipFile
-from urllib.request import urlopen
-import shutil
-import pandas as pd
-from time import time
-from datetime import datetime
-from keras.preprocessing.image import ImageDataGenerator
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TensorBoard, CSVLogger
-from keras.optimizers import Adam
 import csv
-from keras.models import Model, load_model
+import os
+import shutil
+from datetime import datetime
+from time import time
+from urllib.request import urlopen
+from zipfile import ZipFile
+
 import numpy as np
-from sklearn.metrics import confusion_matrix, classification_report
-from keras import backend as K
+import pandas as pd
+import requests
+from tensorflow.keras import backend as K
+from tensorflow.keras.applications.inception_v3 import InceptionV3
+from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.callbacks import (CSVLogger, EarlyStopping, ModelCheckpoint,
+                             ReduceLROnPlateau, TensorBoard)
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from skimage.io import imread
 from skimage.transform import resize
-from keras.applications.inception_v3 import InceptionV3
-from keras.applications.resnet50 import ResNet50
-from keras.layers import Dense, GlobalAveragePooling2D
-import requests
+from sklearn.metrics import classification_report, confusion_matrix
 
 # Global paths
-OUTPUT_DIRECTORY = "./DeepWeeds/outputs/"
-LABEL_DIRECTORY = "./DeepWeeds/labels/"
-MODEL_DIRECTORY = "./DeepWeeds/models/"
+OUTPUT_DIRECTORY = "./outputs/"
+LABEL_DIRECTORY = "./labels/"
+MODEL_DIRECTORY = "./models/"
 MODEL_GD_ID = "1MRbN5hXOTYnw7-71K-2vjY01uJ9GkQM5"
-MODEL_ZIP_FILE = "./DeepWeeds/models/models.zip"
-IMG_DIRECTORY = "./DeepWeeds/images/"
+MODEL_ZIP_FILE = "./models/models.zip"
+IMG_DIRECTORY = "./images/"
 IMG_GD_ID = "1xnK3B6K6KekDI55vwJ0vnc2IGoDga9cj"
-IMG_ZIP_FILE = "./DeepWeeds/images/images.zip"
+IMG_ZIP_FILE = "./images/images.zip"
 
 # Global variables
 RAW_IMG_SIZE = (256, 256)
@@ -42,7 +44,7 @@ STOPPING_PATIENCE = 32
 LR_PATIENCE = 16
 INITIAL_LR = 0.0001
 CLASSES = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-CLASS_NAMES = ['Chinee Apple',
+CLASS_NAMES = ['Chinese Apple',
                'Lantana',
                'Parkinsonia',
                'Parthenium',
@@ -344,7 +346,7 @@ def inference(model, limit):
         limit = image_count
 
     for i in range(0, limit):
-        print(f"image {i} ", end="")
+        print(f"image {i} ", end=" ")
         # Load image
         start_time = time()
         img = imread(IMG_DIRECTORY + filenames[i])
@@ -358,18 +360,18 @@ def inference(model, limit):
         start_time = time()
         # Predict label
         prediction = model.predict(img, batch_size=1, verbose=0)
-        print(prediction)
+        # print(prediction)
         y_pred = np.argmax(prediction, axis=1)
         y_pred[np.max(prediction, axis=1) < 1/9] = 8
         # print label
-        print(CLASS_NAMES[y_pred[0]], end="")
+        print(CLASS_NAMES[y_pred[0]], end=" ")
         inference_time = time() - start_time
         # Append times to lists
         preprocessing_times.append(preprocessing_time)
         inference_times.append(inference_time)
         print(f"preprocessing:{preprocessing_time}, inference:{inference_time}")
 
-    # Save inference times to csv
+    # Save inference` times to csv
     with open(output_directory + "tf_inference_times.csv", 'w', newline='') as file:
         writer = csv.writer(file, delimiter=',')
         writer.writerow(['Filename', 'Preprocessing time (ms)', 'Inference time (ms)'])

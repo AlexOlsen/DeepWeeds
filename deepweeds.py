@@ -361,10 +361,13 @@ def inference(model, limit):
         print(prediction)
         y_pred = np.argmax(prediction, axis=1)
         y_pred[np.max(prediction, axis=1) < 1/9] = 8
+        # print label
+        print(CLASS_NAMES[y_pred[0]], end="")
         inference_time = time() - start_time
         # Append times to lists
         preprocessing_times.append(preprocessing_time)
         inference_times.append(inference_time)
+        print(f"preprocessing:{preprocessing_time}, inference:{inference_time}")
 
     # Save inference times to csv
     with open(output_directory + "tf_inference_times.csv", 'w', newline='') as file:

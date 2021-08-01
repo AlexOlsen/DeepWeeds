@@ -22,14 +22,14 @@ from keras.layers import Dense, GlobalAveragePooling2D
 import requests
 
 # Global paths
-OUTPUT_DIRECTORY = "./outputs/"
-LABEL_DIRECTORY = "./labels/"
-MODEL_DIRECTORY = "./models/"
+OUTPUT_DIRECTORY = "./DeepWeeds/outputs/"
+LABEL_DIRECTORY = "./DeepWeeds/labels/"
+MODEL_DIRECTORY = "./DeepWeeds/models/"
 MODEL_GD_ID = "1MRbN5hXOTYnw7-71K-2vjY01uJ9GkQM5"
-MODEL_ZIP_FILE = "./models/models.zip"
-IMG_DIRECTORY = "./images/"
+MODEL_ZIP_FILE = "./DeepWeeds/models/models.zip"
+IMG_DIRECTORY = "./DeepWeeds/images/"
 IMG_GD_ID = "1xnK3B6K6KekDI55vwJ0vnc2IGoDga9cj"
-IMG_ZIP_FILE = "./images/images.zip"
+IMG_ZIP_FILE = "./DeepWeeds/images/images.zip"
 
 # Global variables
 RAW_IMG_SIZE = (256, 256)
@@ -89,8 +89,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train and test ResNet50, InceptionV3, or custom model on DeepWeeds.')
     parser.add_argument("command", default='train', help="'cross_validate' or 'inference'")
     parser.add_argument('--model', default='resnet', help="'resnet', 'inception', or path to .hdf5 file.")
+    parser.add_argument('limit', default='-1', help="number of images to exec")
     args = parser.parse_args()
-    return args.command, args.model
+    return args.command, args.model, args.limit
 
 
 def download_images():
@@ -322,7 +323,7 @@ def cross_validate(model_name):
         k = k + 1
 
 
-def inference(model):
+def inference(model, limit):
 
     # Create new output directory for saving inference times
     timestamp = datetime.fromtimestamp(time()).strftime('%Y%m%d-%H%M%S')
@@ -337,7 +338,13 @@ def inference(model):
 
     preprocessing_times = []
     inference_times = []
-    for i in range(image_count):
+
+    limit = int(limit)
+    if limit == -1:
+        limit = image_count
+
+    for i in range(0, limit):
+        print(f"image {i} ", end="")
         # Load image
         start_time = time()
         img = imread(IMG_DIRECTORY + filenames[i])
@@ -351,6 +358,7 @@ def inference(model):
         start_time = time()
         # Predict label
         prediction = model.predict(img, batch_size=1, verbose=0)
+        print(prediction)
         y_pred = np.argmax(prediction, axis=1)
         y_pred[np.max(prediction, axis=1) < 1/9] = 8
         inference_time = time() - start_time
@@ -362,13 +370,13 @@ def inference(model):
     with open(output_directory + "tf_inference_times.csv", 'w', newline='') as file:
         writer = csv.writer(file, delimiter=',')
         writer.writerow(['Filename', 'Preprocessing time (ms)', 'Inference time (ms)'])
-        for i in range(image_count):
+        for i in range(limit):
             writer.writerow([filenames[i], preprocessing_times[i] * 1000, inference_times[i] * 1000])
 
 
 if __name__ == '__main__':
     # Parse command line arguments
-    (command, model) = parse_args()
+    (command, model, limit) = parse_args()
 
     # Download images and models (if necessary)
     download_images()
@@ -387,4 +395,4 @@ if __name__ == '__main__':
             # Construct model from hdf5 model file
             model = load_model(model)
             # Measure the speed of performing inference with the chosen model averaging over DeepWeeds images
-            inference(model)
+            inference(model, limit)

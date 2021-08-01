@@ -340,6 +340,7 @@ def inference(model, limit):
 
     preprocessing_times = []
     inference_times = []
+    labels = []
 
     limit = int(limit)
     if limit == -1:
@@ -364,7 +365,10 @@ def inference(model, limit):
         y_pred = np.argmax(prediction, axis=1)
         y_pred[np.max(prediction, axis=1) < 1/9] = 8
         # print label
-        print(CLASS_NAMES[y_pred[0]], end=" ")
+        label = CLASS_NAMES[y_pred[0]]
+        print(label, end=" ")
+        labels.append(label)
+
         inference_time = time() - start_time
         # Append times to lists
         preprocessing_times.append(preprocessing_time)
@@ -374,9 +378,9 @@ def inference(model, limit):
     # Save inference` times to csv
     with open(output_directory + "tf_inference_times.csv", 'w', newline='') as file:
         writer = csv.writer(file, delimiter=',')
-        writer.writerow(['Filename', 'Preprocessing time (ms)', 'Inference time (ms)'])
+        writer.writerow(['Filename', 'label','Preprocessing time (ms)', 'Inference time (ms)'])
         for i in range(limit):
-            writer.writerow([filenames[i], preprocessing_times[i] * 1000, inference_times[i] * 1000])
+            writer.writerow([filenames[i], labels[i], preprocessing_times[i] * 1000, inference_times[i] * 1000])
 
 
 if __name__ == '__main__':

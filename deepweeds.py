@@ -352,7 +352,8 @@ def inference(model, limit):
         start_time = time()
         img = imread(IMG_DIRECTORY + filenames[i])
         # Resize to 224x224
-        img = resize(img, (224, 224))
+        # img = resize(img, (224, 224))
+        img = crop(img, (224, 224))
         # Map to batch
         img = np.expand_dims(img, axis=0)
         # Scale from int to float

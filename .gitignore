@@ -2,3 +2,4 @@ images/
 models/
 outputs/
 tensorrt/bin/
+.idea

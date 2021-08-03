@@ -166,9 +166,9 @@ def cross_validate(model_name):
         train_label_file = "{}train_subset{}.csv".format(LABEL_DIRECTORY, k)
         val_label_file = "{}val_subset{}.csv".format(LABEL_DIRECTORY, k)
         test_label_file = "{}test_subset{}.csv".format(LABEL_DIRECTORY, k)
-        train_dataframe = pd.read_csv(train_label_file)
-        val_dataframe = pd.read_csv(val_label_file)
-        test_dataframe = pd.read_csv(test_label_file)
+        train_dataframe = pd.read_csv(train_label_file, dtype=str)
+        val_dataframe = pd.read_csv(val_label_file, dtype=str)
+        test_dataframe = pd.read_csv(test_label_file, dtype=str)
         train_image_count = train_dataframe.shape[0]
         val_image_count = train_dataframe.shape[0]
         test_image_count = test_dataframe.shape[0]
